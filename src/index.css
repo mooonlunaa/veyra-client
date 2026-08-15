@@ -1,95 +1,123 @@
 * {
   box-sizing: border-box;
 }
-html, body {
-  margin: 0;
-  padding: 0;
-  width: 100%;
-  overflow-x: hidden;
-  background: #0B0B0C;
-  font-family: 'Space Grotesk', -apple-system, sans-serif;
-}
-#root {
-  min-height: 100vh;
-}
-img {
-  max-width: 100%;
-  display: block;
-}
-a {
-  color: inherit;
-}
-button {
-  font-family: inherit;
+
+:root {
+  --veyra-c1: #7F00FF;
+  --veyra-c2: #E100FF;
+  --veyra-angle: 135deg;
+  --veyra-gradient: linear-gradient(135deg, #7F00FF, #E100FF);
 }
 
+body {
+  margin: 0;
+  font-family: 'Space Grotesk', -apple-system, sans-serif;
+}
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+
+input[type="color"] {
+  -webkit-appearance: none;
+  appearance: none;
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 0;
+}
+input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+input[type="color"]::-webkit-color-swatch {
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 10px;
+}
+input[type="range"] { accent-color: var(--veyra-c1); }
+
 .veyra-sidebar {
-  width: 240px;
-  min-width: 240px;
-  border-right: 1px solid #1C1C1E;
+  width: 220px;
+  border-right: 1px solid rgba(255,255,255,0.08);
   display: flex;
   flex-direction: column;
-  padding: 20px 14px;
+  padding: 24px 16px;
   position: sticky;
   top: 0;
   height: 100vh;
   flex-shrink: 0;
-  overflow-y: auto;
+  background: rgba(14,14,16,0.5);
+  backdrop-filter: blur(26px) saturate(160%);
+  -webkit-backdrop-filter: blur(26px) saturate(160%);
 }
-.veyra-bottomnav {
-  display: none;
-}
+.veyra-bottomnav { display: none; }
 .veyra-main {
   flex: 1;
-  min-width: 0;
-  padding: 28px 32px 120px;
+  padding: 32px 40px;
   overflow-y: auto;
-  overflow-x: hidden;
+  padding-bottom: 100px;
+  min-width: 0;
 }
 .veyra-playerbar {
   position: fixed;
   bottom: 0;
-  left: 240px;
+  left: 220px;
   right: 0;
-  background: #101012;
-  border-top: 1px solid #1C1C1E;
-  padding: 12px 24px;
+  background: rgba(16,16,19,0.6);
+  backdrop-filter: blur(28px) saturate(160%);
+  -webkit-backdrop-filter: blur(28px) saturate(160%);
+  border-top: 1px solid rgba(255,255,255,0.08);
+  padding: 12px 28px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   cursor: pointer;
   z-index: 50;
 }
-.veyra-grid {
-  display: grid !important;
-  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)) !important;
-  gap: 18px !important;
+
+.veyra-glass-card {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+}
+.veyra-glass-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.07);
+}
+
+.veyra-row {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  padding-bottom: 10px;
+  scrollbar-width: none;
+}
+.veyra-row::-webkit-scrollbar { display: none; }
+
+.veyra-fade-in { animation: veyraFadeIn 0.35s ease both; }
+@keyframes veyraFadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @media (max-width: 860px) {
-  .veyra-sidebar {
-    display: none;
-  }
+  .veyra-sidebar { display: none; }
   .veyra-bottomnav {
     display: flex;
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
-    background: #101012;
-    border-top: 1px solid #1C1C1E;
+    background: rgba(14,14,16,0.65);
+    backdrop-filter: blur(24px) saturate(160%);
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
+    border-top: 1px solid rgba(255,255,255,0.08);
     padding: 8px 4px calc(8px + env(safe-area-inset-bottom));
     justify-content: space-around;
     z-index: 60;
   }
-  .veyra-main {
-    padding: 18px 16px 150px;
-  }
-  .veyra-playerbar {
-    left: 0;
-    bottom: 58px;
-    padding: 10px 14px;
-  }
+  .veyra-main { padding: 20px 16px 140px; }
+  .veyra-playerbar { left: 0; bottom: 58px; padding: 10px 14px; }
   .veyra-grid {
     grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)) !important;
     gap: 12px !important;
@@ -97,7 +125,5 @@ button {
 }
 
 @media (max-width: 480px) {
-  .veyra-track-title {
-    max-width: 140px !important;
-  }
-}
+  .veyra-track-title { max-width: 140px !important; }
+    }
