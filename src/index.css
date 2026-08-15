@@ -1,7 +1,103 @@
 * {
   box-sizing: border-box;
 }
-body {
+html, body {
   margin: 0;
+  padding: 0;
+  width: 100%;
+  overflow-x: hidden;
+  background: #0B0B0C;
   font-family: 'Space Grotesk', -apple-system, sans-serif;
+}
+#root {
+  min-height: 100vh;
+}
+img {
+  max-width: 100%;
+  display: block;
+}
+a {
+  color: inherit;
+}
+button {
+  font-family: inherit;
+}
+
+.veyra-sidebar {
+  width: 240px;
+  min-width: 240px;
+  border-right: 1px solid #1C1C1E;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 14px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  flex-shrink: 0;
+  overflow-y: auto;
+}
+.veyra-bottomnav {
+  display: none;
+}
+.veyra-main {
+  flex: 1;
+  min-width: 0;
+  padding: 28px 32px 120px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+.veyra-playerbar {
+  position: fixed;
+  bottom: 0;
+  left: 240px;
+  right: 0;
+  background: #101012;
+  border-top: 1px solid #1C1C1E;
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  z-index: 50;
+}
+.veyra-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)) !important;
+  gap: 18px !important;
+}
+
+@media (max-width: 860px) {
+  .veyra-sidebar {
+    display: none;
+  }
+  .veyra-bottomnav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #101012;
+    border-top: 1px solid #1C1C1E;
+    padding: 8px 4px calc(8px + env(safe-area-inset-bottom));
+    justify-content: space-around;
+    z-index: 60;
+  }
+  .veyra-main {
+    padding: 18px 16px 150px;
+  }
+  .veyra-playerbar {
+    left: 0;
+    bottom: 58px;
+    padding: 10px 14px;
+  }
+  .veyra-grid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)) !important;
+    gap: 12px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .veyra-track-title {
+    max-width: 140px !important;
+  }
 }
