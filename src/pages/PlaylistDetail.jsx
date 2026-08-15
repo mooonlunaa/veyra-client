@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { playlistApi } from "../lib/api";
-import { PlayIcon, TrashIcon } from "../components/Icons";
+import { PlayIcon, TrashIcon, PlusIcon } from "../components/Icons";
+import AddToPlaylistMenu from "../components/AddToPlaylistMenu";
 
 function formatDuration(sec) {
   if (!sec && sec !== 0) return "--:--";
@@ -15,6 +16,7 @@ export default function PlaylistDetail({ onPlay }) {
   const navigate = useNavigate();
   const [playlist, setPlaylist] = useState(null);
   const [error, setError] = useState("");
+  const [addTarget, setAddTarget] = useState(null);
 
   async function load() {
     try {
@@ -27,6 +29,7 @@ export default function PlaylistDetail({ onPlay }) {
 
   useEffect(() => {
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   async function handleRemoveSong(songRowId) {
@@ -48,7 +51,7 @@ export default function PlaylistDetail({ onPlay }) {
   if (!playlist) return <p style={styles.status}>Memuat...</p>;
 
   return (
-    <div>
+    <div className="veyra-fade-in">
       <button style={styles.backBtn} onClick={() => navigate("/playlists")}>
         Kembali
       </button>
@@ -61,7 +64,7 @@ export default function PlaylistDetail({ onPlay }) {
 
       <div style={styles.list}>
         {playlist.songs.map((song, i) => (
-          <div key={song.id} style={styles.row}>
+          <div key={song.id} className="veyra-glass-card" style={styles.row}>
             <button style={styles.playIconBtn} onClick={() => handlePlayAll(i)}>
               <PlayIcon size={15} />
             </button>
@@ -70,12 +73,23 @@ export default function PlaylistDetail({ onPlay }) {
               <p style={styles.songTitle}>{song.title}</p>
               <p style={styles.songDuration}>{formatDuration(song.duration)}</p>
             </div>
+            <button
+              style={styles.addBtn}
+              onClick={() => setAddTarget({ id: song.song_id, title: song.title, thumbnail: song.thumbnail, duration: song.duration })}
+              title="Tambah ke playlist lain"
+            >
+              <PlusIcon size={14} />
+            </button>
             <button style={styles.trashBtn} onClick={() => handleRemoveSong(song.id)}>
               <TrashIcon size={15} />
             </button>
           </div>
         ))}
       </div>
+
+      {addTarget && (
+        <AddToPlaylistMenu track={addTarget} onClose={() => setAddTarget(null)} />
+      )}
     </div>
   );
 }
@@ -95,17 +109,17 @@ const styles = {
   status: { color: "#8A8A8E", fontSize: 14 },
   error: { color: "#E5675A", fontSize: 14 },
   empty: { color: "#8A8A8E", fontSize: 14 },
-  list: { display: "flex", flexDirection: "column", gap: 4 },
+  list: { display: "flex", flexDirection: "column", gap: 6 },
   row: {
     display: "flex",
     alignItems: "center",
     gap: 14,
     padding: "10px 12px",
-    borderRadius: 8,
+    borderRadius: 10,
   },
   playIconBtn: {
-    background: "#151517",
-    border: "1px solid #262628",
+    background: "rgba(255,255,255,0.06)",
+    border: "1px solid rgba(255,255,255,0.1)",
     borderRadius: "50%",
     width: 30,
     height: 30,
@@ -127,5 +141,6 @@ const styles = {
     textOverflow: "ellipsis",
   },
   songDuration: { margin: 0, fontSize: 12, color: "#8A8A8E" },
+  addBtn: { background: "none", border: "none", color: "#8A8A8E", cursor: "pointer", padding: 4 },
   trashBtn: { background: "none", border: "none", color: "#8A8A8E", cursor: "pointer", padding: 4 },
 };
