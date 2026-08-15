@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./lib/AuthContext";
+import { ThemeProvider } from "./lib/ThemeContext";
 import Layout from "./components/Layout";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -30,6 +31,12 @@ function ProtectedRoute({ children }) {
 function AppRoutes() {
   const [queue, setQueue] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(-1);
+  // playToken bertambah setiap kali user MEMINTA lagu baru diputar.
+  // Ini yang jadi pemicu reload <audio>, BUKAN currentIndex — sebelumnya dua
+  // daftar berbeda (mis. hasil Search vs isi Playlist) bisa punya index yang
+  // sama (0), sehingga useEffect([currentIndex]) tidak pernah jalan ulang dan
+  // audio lama tetap playing walau UI sudah pindah ke lagu baru.
+  const [playToken, setPlayToken] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [expanded, setExpanded] = useState(false);
@@ -40,6 +47,7 @@ function AppRoutes() {
   function handlePlay(track, list, index) {
     setQueue(list);
     setCurrentIndex(index);
+    setPlayToken((t) => t + 1);
     setIsPlaying(true);
     setExpanded(true);
   }
@@ -49,7 +57,7 @@ function AppRoutes() {
     if (isPlaying) {
       audioRef.current.pause();
     } else {
-      audioRef.current.play();
+      audioRef.current.play().catch(() => {});
     }
     setIsPlaying(!isPlaying);
   }
@@ -57,12 +65,14 @@ function AppRoutes() {
   function playNext() {
     if (currentIndex < queue.length - 1) {
       setCurrentIndex(currentIndex + 1);
+      setPlayToken((t) => t + 1);
       setIsPlaying(true);
     }
   }
   function playPrev() {
     if (currentIndex > 0) {
       setCurrentIndex(currentIndex - 1);
+      setPlayToken((t) => t + 1);
       setIsPlaying(true);
     }
   }
@@ -71,14 +81,23 @@ function AppRoutes() {
   }
   function handleSelectQueueItem(index) {
     setCurrentIndex(index);
+    setPlayToken((t) => t + 1);
     setIsPlaying(true);
   }
 
+  // Setiap playToken berubah = user benar-benar minta lagu baru.
+  // Hentikan audio lama secara eksplisit dulu, baru ganti src & mainkan.
   useEffect(() => {
-    if (!audioRef.current || !current) return;
-    audioRef.current.src = musicApi.streamUrl(current.id);
-    audioRef.current.play().catch(() => {});
-  }, [currentIndex]);
+    const el = audioRef.current;
+    if (!el || !current) return;
+    el.pause();
+    el.currentTime = 0;
+    el.src = musicApi.streamUrl(current.id);
+    el.load();
+    const p = el.play();
+    if (p && typeof p.catch === "function") p.catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playToken]);
 
   useEffect(() => {
     const el = audioRef.current;
@@ -91,12 +110,13 @@ function AppRoutes() {
       el.removeEventListener("timeupdate", onTime);
       el.removeEventListener("ended", onEnded);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentIndex, queue]);
 
   return (
     <Layout>
       <Routes>
-        <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+        <Route path="/" element={<ProtectedRoute><Home onPlay={handlePlay} /></ProtectedRoute>} />
         <Route path="/search" element={<ProtectedRoute><Search onPlay={handlePlay} /></ProtectedRoute>} />
         <Route path="/playlists" element={<ProtectedRoute><Playlists /></ProtectedRoute>} />
         <Route path="/playlists/:id" element={<ProtectedRoute><PlaylistDetail onPlay={handlePlay} /></ProtectedRoute>} />
@@ -176,17 +196,19 @@ function AuthRoutes() {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <AuthRoutes />
-      </AuthProvider>
-    </BrowserRouter>
+    <ThemeProvider>
+      <BrowserRouter>
+        <AuthProvider>
+          <AuthRoutes />
+        </AuthProvider>
+      </BrowserRouter>
+    </ThemeProvider>
   );
 }
 
 const styles = {
   nowPlaying: { display: "flex", alignItems: "center", gap: 12, minWidth: 0, flex: 1 },
-  thumb: { width: 40, height: 40, borderRadius: 6, objectFit: "cover", flexShrink: 0 },
+  thumb: { width: 40, height: 40, borderRadius: 8, objectFit: "cover", flexShrink: 0 },
   trackTitle: {
     margin: "0 0 2px 0",
     fontSize: 13,
@@ -200,8 +222,8 @@ const styles = {
   controls: { display: "flex", alignItems: "center", gap: 14 },
   iconBtn: { background: "none", border: "none", color: "#F2F2F0", cursor: "pointer", padding: 4 },
   playBtn: {
-    background: "#F2F2F0",
-    color: "#0B0B0C",
+    background: "var(--veyra-gradient)",
+    color: "#fff",
     border: "none",
     borderRadius: "50%",
     width: 32,
