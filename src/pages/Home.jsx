@@ -10,7 +10,7 @@ export default function Home() {
       <h1 style={styles.title}>Halo, {user?.username}</h1>
       <p style={styles.subtitle}>Mau dengarkan apa hari ini?</p>
 
-      <div className="veyra-grid" style={styles.cards}>
+      <div style={styles.cards}>
         <Link to="/search" style={styles.actionCard}>
           <div style={styles.actionIconWrap}>
             <SearchIcon size={24} />
