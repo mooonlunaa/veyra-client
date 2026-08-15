@@ -107,11 +107,11 @@ function AppRoutes() {
       <audio ref={audioRef} />
 
       {current && (
-        <div style={styles.playerBar}>
+        <div className="veyra-playerbar">
           <div style={styles.nowPlaying} onClick={() => setExpanded(true)}>
             <img src={current.thumbnail} alt="" style={styles.thumb} />
             <div style={{ minWidth: 0 }}>
-              <p style={styles.trackTitle}>{current.title}</p>
+              <p className="veyra-track-title" style={styles.trackTitle}>{current.title}</p>
               <p style={styles.trackTime}>
                 {formatDuration(progress)} / {formatDuration(current.duration)}
               </p>
@@ -185,19 +185,6 @@ export default function App() {
 }
 
 const styles = {
-  playerBar: {
-    position: "fixed",
-    bottom: 0,
-    left: 220,
-    right: 0,
-    background: "#101012",
-    borderTop: "1px solid #1C1C1E",
-    padding: "12px 28px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    cursor: "pointer",
-  },
   nowPlaying: { display: "flex", alignItems: "center", gap: 12, minWidth: 0, flex: 1 },
   thumb: { width: 40, height: 40, borderRadius: 6, objectFit: "cover", flexShrink: 0 },
   trackTitle: {
