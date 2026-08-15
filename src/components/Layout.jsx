@@ -1,214 +1,201 @@
-import { useState, useRef, useEffect } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider, useAuth } from "./lib/AuthContext";
-import Layout from "./components/Layout";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import Home from "./pages/Home";
-import Search from "./pages/Search";
-import Playlists from "./pages/Playlists";
-import PlaylistDetail from "./pages/PlaylistDetail";
-import Profile from "./pages/Profile";
-import Settings from "./pages/Settings";
-import NowPlaying from "./pages/NowPlaying";
-import { musicApi } from "./lib/api";
-import { PlayIcon, PauseIcon, NextIcon, PrevIcon } from "./components/Icons";
+import { NavLink, useNavigate } from "react-router-dom";
+import { useAuth } from "../lib/AuthContext";
+import { VEYRA_API } from "../lib/api";
+import { HomeIcon, SearchIcon, PlaylistIcon, UserIcon, SettingsIcon, LogoutIcon } from "./Icons";
 
-function formatDuration(sec = 0) {
-  const m = Math.floor(sec / 60);
-  const s = Math.floor(sec % 60);
-  return `${m}:${s.toString().padStart(2, "0")}`;
-}
+const navItems = [
+  { to: "/", label: "Beranda", icon: HomeIcon },
+  { to: "/search", label: "Cari", icon: SearchIcon },
+  { to: "/playlists", label: "Playlist", icon: PlaylistIcon },
+];
 
-function ProtectedRoute({ children }) {
-  const { user, loading } = useAuth();
-  if (loading) return <div style={{ color: "#8A8A8E", padding: 40 }}>Memuat...</div>;
-  if (!user) return <Navigate to="/login" replace />;
-  return children;
-}
+export default function Layout({ children }) {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
-function AppRoutes() {
-  const [queue, setQueue] = useState([]);
-  const [currentIndex, setCurrentIndex] = useState(-1);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [expanded, setExpanded] = useState(false);
-  const audioRef = useRef(null);
-
-  const current = currentIndex >= 0 ? queue[currentIndex] : null;
-
-  function handlePlay(track, list, index) {
-    setQueue(list);
-    setCurrentIndex(index);
-    setIsPlaying(true);
-    setExpanded(true);
+  async function handleLogout() {
+    await logout();
+    navigate("/login");
   }
-
-  function togglePlay() {
-    if (!audioRef.current || !current) return;
-    if (isPlaying) {
-      audioRef.current.pause();
-    } else {
-      audioRef.current.play();
-    }
-    setIsPlaying(!isPlaying);
-  }
-
-  function playNext() {
-    if (currentIndex < queue.length - 1) {
-      setCurrentIndex(currentIndex + 1);
-      setIsPlaying(true);
-    }
-  }
-  function playPrev() {
-    if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1);
-      setIsPlaying(true);
-    }
-  }
-  function handleSeek(time) {
-    if (audioRef.current) audioRef.current.currentTime = time;
-  }
-  function handleSelectQueueItem(index) {
-    setCurrentIndex(index);
-    setIsPlaying(true);
-  }
-
-  useEffect(() => {
-    if (!audioRef.current || !current) return;
-    audioRef.current.src = musicApi.streamUrl(current.id);
-    audioRef.current.play().catch(() => {});
-  }, [currentIndex]);
-
-  useEffect(() => {
-    const el = audioRef.current;
-    if (!el) return;
-    const onTime = () => setProgress(el.currentTime);
-    const onEnded = () => playNext();
-    el.addEventListener("timeupdate", onTime);
-    el.addEventListener("ended", onEnded);
-    return () => {
-      el.removeEventListener("timeupdate", onTime);
-      el.removeEventListener("ended", onEnded);
-    };
-  }, [currentIndex, queue]);
 
   return (
-    <Layout>
-      <Routes>
-        <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
-        <Route path="/search" element={<ProtectedRoute><Search onPlay={handlePlay} /></ProtectedRoute>} />
-        <Route path="/playlists" element={<ProtectedRoute><Playlists /></ProtectedRoute>} />
-        <Route path="/playlists/:id" element={<ProtectedRoute><PlaylistDetail onPlay={handlePlay} /></ProtectedRoute>} />
-        <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-        <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-      </Routes>
+    <div style={styles.shell}>
+      <aside className="veyra-sidebar">
+        <div style={styles.brand}>
+          <img src="/logo.jpg" alt="VEYRA" style={styles.brandMark} />
+          <span style={styles.brandText}>VEYRA</span>
+        </div>
 
-      <audio ref={audioRef} />
+        <nav style={styles.nav}>
+          {navItems.map(({ to, label, icon: Icon }) => (
+            <NavLink
+              key={to}
+              to={to}
+              end={to === "/"}
+              style={({ isActive }) => ({
+                ...styles.navItem,
+                ...(isActive ? styles.navItemActive : {}),
+              })}
+            >
+              <Icon size={20} />
+              <span>{label}</span>
+            </NavLink>
+          ))}
+        </nav>
 
-      {current && (
-        <div className="veyra-playerbar">
-          <div style={styles.nowPlaying} onClick={() => setExpanded(true)}>
-            <img src={current.thumbnail} alt="" style={styles.thumb} />
-            <div style={{ minWidth: 0 }}>
-              <p className="veyra-track-title" style={styles.trackTitle}>{current.title}</p>
-              <p style={styles.trackTime}>
-                {formatDuration(progress)} / {formatDuration(current.duration)}
-              </p>
+        <div style={styles.libraryCard}>
+          <p style={styles.libraryTitle}>Playlist Kamu</p>
+          <p style={styles.libraryDesc}>Semua koleksi lagu tersimpan di satu tempat.</p>
+          <NavLink to="/playlists" style={styles.libraryBtn}>
+            Buka Playlist
+          </NavLink>
+        </div>
+
+        {user && (
+          <div style={styles.userBox}>
+            <button style={styles.userRow} onClick={() => navigate("/profile")}>
+              <div style={styles.avatarPlaceholder}>
+                {user.avatar_path ? (
+                  <img
+                    src={`${VEYRA_API}/uploads/avatars/${user.avatar_path}`}
+                    alt=""
+                    style={styles.avatarImg}
+                  />
+                ) : (
+                  <UserIcon size={16} />
+                )}
+              </div>
+              <span style={styles.username}>{user.username}</span>
+            </button>
+            <div style={{ display: "flex", gap: 2 }}>
+              <button style={styles.iconOnlyBtn} onClick={() => navigate("/settings")} title="Pengaturan">
+                <SettingsIcon size={17} />
+              </button>
+              <button style={styles.iconOnlyBtn} onClick={handleLogout} title="Keluar">
+                <LogoutIcon size={17} />
+              </button>
             </div>
           </div>
-          <div style={styles.controls}>
-            <button
-              style={styles.iconBtn}
-              onClick={(e) => { e.stopPropagation(); playPrev(); }}
-              disabled={currentIndex <= 0}
-            >
-              <PrevIcon />
-            </button>
-            <button
-              style={styles.playBtn}
-              onClick={(e) => { e.stopPropagation(); togglePlay(); }}
-            >
-              {isPlaying ? <PauseIcon size={16} /> : <PlayIcon size={16} />}
-            </button>
-            <button
-              style={styles.iconBtn}
-              onClick={(e) => { e.stopPropagation(); playNext(); }}
-              disabled={currentIndex >= queue.length - 1}
-            >
-              <NextIcon />
-            </button>
-          </div>
-        </div>
-      )}
+        )}
+      </aside>
 
-      {expanded && current && (
-        <NowPlaying
-          track={current}
-          queue={queue}
-          currentIndex={currentIndex}
-          isPlaying={isPlaying}
-          progress={progress}
-          onTogglePlay={togglePlay}
-          onNext={playNext}
-          onPrev={playPrev}
-          onSeek={handleSeek}
-          onClose={() => setExpanded(false)}
-          onSelectQueueItem={handleSelectQueueItem}
-        />
-      )}
-    </Layout>
-  );
-}
+      <main className="veyra-main">{children}</main>
 
-function AuthRoutes() {
-  const { user, loading } = useAuth();
-  if (loading) return <div style={{ color: "#8A8A8E", padding: 40 }}>Memuat...</div>;
-
-  return (
-    <Routes>
-      <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
-      <Route path="/register" element={user ? <Navigate to="/" replace /> : <Register />} />
-      <Route path="/*" element={<AppRoutes />} />
-    </Routes>
-  );
-}
-
-export default function App() {
-  return (
-    <BrowserRouter>
-      <AuthProvider>
-        <AuthRoutes />
-      </AuthProvider>
-    </BrowserRouter>
+      <nav className="veyra-bottomnav">
+        {navItems.map(({ to, label, icon: Icon }) => (
+          <NavLink
+            key={to}
+            to={to}
+            end={to === "/"}
+            style={({ isActive }) => ({
+              ...styles.bottomNavItem,
+              color: isActive ? "#F2F2F0" : "#6C6C70",
+            })}
+          >
+            <Icon size={21} />
+            <span style={styles.bottomNavLabel}>{label}</span>
+          </NavLink>
+        ))}
+        <button style={styles.bottomNavItem} onClick={() => navigate("/profile")}>
+          <UserIcon size={21} />
+          <span style={styles.bottomNavLabel}>Profil</span>
+        </button>
+        <button style={styles.bottomNavItem} onClick={() => navigate("/settings")}>
+          <SettingsIcon size={21} />
+          <span style={styles.bottomNavLabel}>Atur</span>
+        </button>
+      </nav>
+    </div>
   );
 }
 
 const styles = {
-  nowPlaying: { display: "flex", alignItems: "center", gap: 12, minWidth: 0, flex: 1 },
-  thumb: { width: 40, height: 40, borderRadius: 6, objectFit: "cover", flexShrink: 0 },
-  trackTitle: {
-    margin: "0 0 2px 0",
+  shell: { display: "flex", minHeight: "100vh", background: "#0B0B0C", color: "#F2F2F0" },
+  brand: { display: "flex", alignItems: "center", gap: 10, padding: "4px 8px", marginBottom: 24 },
+  brandMark: { width: 26, height: 26, borderRadius: 6, objectFit: "cover" },
+  brandText: { fontSize: 18, fontWeight: 700, letterSpacing: "0.06em" },
+  nav: { display: "flex", flexDirection: "column", gap: 2, marginBottom: 16 },
+  navItem: {
+    display: "flex",
+    alignItems: "center",
+    gap: 14,
+    padding: "10px 12px",
+    borderRadius: 8,
+    color: "#A7A7AB",
+    textDecoration: "none",
+    fontSize: 14.5,
+    fontWeight: 600,
+  },
+  navItemActive: { background: "#181818", color: "#F2F2F0" },
+  libraryCard: {
+    background: "#151517",
+    borderRadius: 10,
+    padding: "16px",
+    marginBottom: 16,
+  },
+  libraryTitle: { margin: "0 0 6px 0", fontSize: 13.5, fontWeight: 700 },
+  libraryDesc: { margin: "0 0 14px 0", fontSize: 12, color: "#A7A7AB", lineHeight: 1.4 },
+  libraryBtn: {
+    display: "inline-block",
+    background: "#F2F2F0",
+    color: "#0B0B0C",
+    fontSize: 12.5,
+    fontWeight: 700,
+    padding: "8px 16px",
+    borderRadius: 20,
+    textDecoration: "none",
+  },
+  userBox: {
+    marginTop: "auto",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: "8px",
+    borderTop: "1px solid #1C1C1E",
+    paddingTop: 14,
+  },
+  userRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    minWidth: 0,
+    background: "none",
+    border: "none",
+    cursor: "pointer",
+    padding: 0,
+  },
+  avatarPlaceholder: {
+    width: 30,
+    height: 30,
+    borderRadius: "50%",
+    background: "#1C1C1E",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    color: "#8A8A8E",
+    overflow: "hidden",
+    flexShrink: 0,
+  },
+  avatarImg: { width: "100%", height: "100%", objectFit: "cover" },
+  username: {
     fontSize: 13,
-    fontWeight: 500,
-    maxWidth: 260,
+    fontWeight: 600,
+    color: "#F2F2F0",
     whiteSpace: "nowrap",
     overflow: "hidden",
     textOverflow: "ellipsis",
   },
-  trackTime: { margin: 0, fontSize: 11.5, color: "#8A8A8E" },
-  controls: { display: "flex", alignItems: "center", gap: 14 },
-  iconBtn: { background: "none", border: "none", color: "#F2F2F0", cursor: "pointer", padding: 4 },
-  playBtn: {
-    background: "#F2F2F0",
-    color: "#0B0B0C",
-    border: "none",
-    borderRadius: "50%",
-    width: 32,
-    height: 32,
+  iconOnlyBtn: { background: "none", border: "none", color: "#A7A7AB", cursor: "pointer", padding: 6 },
+  bottomNavItem: {
     display: "flex",
+    flexDirection: "column",
     alignItems: "center",
-    justifyContent: "center",
+    gap: 3,
+    background: "none",
+    border: "none",
+    textDecoration: "none",
+    padding: "4px 8px",
     cursor: "pointer",
   },
+  bottomNavLabel: { fontSize: 10, fontWeight: 500 },
 };
