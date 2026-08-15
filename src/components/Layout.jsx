@@ -1,5 +1,6 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../lib/AuthContext";
+import { useTheme, hexToRgba } from "../lib/ThemeContext";
 import { VEYRA_API } from "../lib/api";
 import { HomeIcon, SearchIcon, PlaylistIcon, UserIcon, SettingsIcon, LogoutIcon } from "./Icons";
 
@@ -7,10 +8,12 @@ const navItems = [
   { to: "/", label: "Beranda", icon: HomeIcon },
   { to: "/search", label: "Cari", icon: SearchIcon },
   { to: "/playlists", label: "Playlist", icon: PlaylistIcon },
+  { to: "/profile", label: "Profil", icon: UserIcon },
 ];
 
 export default function Layout({ children }) {
   const { user, logout } = useAuth();
+  const { theme } = useTheme();
   const navigate = useNavigate();
 
   async function handleLogout() {
@@ -18,14 +21,25 @@ export default function Layout({ children }) {
     navigate("/login");
   }
 
+  const bgPath = user?.settings?.background_path;
+  const shellStyle = {
+    ...styles.shell,
+    backgroundImage: bgPath
+      ? `linear-gradient(180deg, rgba(11,11,12,0.55), rgba(11,11,12,0.9)), url(${VEYRA_API}/uploads/backgrounds/${bgPath})`
+      : `radial-gradient(circle at 10% -10%, ${hexToRgba(theme.color1, 0.22)}, transparent 55%), radial-gradient(circle at 100% 15%, ${hexToRgba(theme.color2, 0.18)}, transparent 50%)`,
+    backgroundSize: bgPath ? "cover" : "auto",
+    backgroundPosition: "center",
+    backgroundAttachment: bgPath ? "fixed" : "scroll",
+    backgroundColor: "#0B0B0C",
+  };
+
   return (
-    <div style={styles.shell}>
+    <div style={shellStyle}>
       <aside className="veyra-sidebar">
         <div style={styles.brand}>
           <img src="/logo.jpg" alt="VEYRA" style={styles.brandMark} />
-          <span style={styles.brandText}>VEYRA</span>
+          <span style={{ ...styles.brandText, backgroundImage: "var(--veyra-gradient)" }}>VEYRA</span>
         </div>
-
         <nav style={styles.nav}>
           {navItems.map(({ to, label, icon: Icon }) => (
             <NavLink
@@ -37,23 +51,14 @@ export default function Layout({ children }) {
                 ...(isActive ? styles.navItemActive : {}),
               })}
             >
-              <Icon size={20} />
+              <Icon size={19} />
               <span>{label}</span>
             </NavLink>
           ))}
         </nav>
-
-        <div style={styles.libraryCard}>
-          <p style={styles.libraryTitle}>Playlist Kamu</p>
-          <p style={styles.libraryDesc}>Semua koleksi lagu tersimpan di satu tempat.</p>
-          <NavLink to="/playlists" style={styles.libraryBtn}>
-            Buka Playlist
-          </NavLink>
-        </div>
-
         {user && (
           <div style={styles.userBox}>
-            <button style={styles.userRow} onClick={() => navigate("/profile")}>
+            <div style={styles.userRow}>
               <div style={styles.avatarPlaceholder}>
                 {user.avatar_path ? (
                   <img
@@ -66,13 +71,13 @@ export default function Layout({ children }) {
                 )}
               </div>
               <span style={styles.username}>{user.username}</span>
-            </button>
+            </div>
             <div style={{ display: "flex", gap: 2 }}>
-              <button style={styles.iconOnlyBtn} onClick={() => navigate("/settings")} title="Pengaturan">
-                <SettingsIcon size={17} />
+              <button style={styles.logoutBtn} onClick={() => navigate("/settings")} title="Pengaturan">
+                <SettingsIcon size={16} />
               </button>
-              <button style={styles.iconOnlyBtn} onClick={handleLogout} title="Keluar">
-                <LogoutIcon size={17} />
+              <button style={styles.logoutBtn} onClick={handleLogout} title="Keluar">
+                <LogoutIcon size={16} />
               </button>
             </div>
           </div>
@@ -96,10 +101,6 @@ export default function Layout({ children }) {
             <span style={styles.bottomNavLabel}>{label}</span>
           </NavLink>
         ))}
-        <button style={styles.bottomNavItem} onClick={() => navigate("/profile")}>
-          <UserIcon size={21} />
-          <span style={styles.bottomNavLabel}>Profil</span>
-        </button>
         <button style={styles.bottomNavItem} onClick={() => navigate("/settings")}>
           <SettingsIcon size={21} />
           <span style={styles.bottomNavLabel}>Atur</span>
@@ -110,60 +111,40 @@ export default function Layout({ children }) {
 }
 
 const styles = {
-  shell: { display: "flex", minHeight: "100vh", background: "#0B0B0C", color: "#F2F2F0" },
-  brand: { display: "flex", alignItems: "center", gap: 10, padding: "4px 8px", marginBottom: 24 },
-  brandMark: { width: 26, height: 26, borderRadius: 6, objectFit: "cover" },
-  brandText: { fontSize: 18, fontWeight: 700, letterSpacing: "0.06em" },
-  nav: { display: "flex", flexDirection: "column", gap: 2, marginBottom: 16 },
+  shell: { display: "flex", minHeight: "100vh", color: "#F2F2F0" },
+  brand: { display: "flex", alignItems: "center", gap: 10, padding: "0 8px", marginBottom: 32 },
+  brandMark: { width: 22, height: 22, borderRadius: 6, objectFit: "cover" },
+  brandText: {
+    fontSize: 17,
+    fontWeight: 700,
+    letterSpacing: "0.06em",
+    backgroundClip: "text",
+    WebkitBackgroundClip: "text",
+    WebkitTextFillColor: "transparent",
+  },
+  nav: { display: "flex", flexDirection: "column", gap: 4, flex: 1 },
   navItem: {
     display: "flex",
     alignItems: "center",
-    gap: 14,
+    gap: 12,
     padding: "10px 12px",
     borderRadius: 8,
-    color: "#A7A7AB",
+    color: "#8A8A8E",
     textDecoration: "none",
-    fontSize: 14.5,
-    fontWeight: 600,
+    fontSize: 14,
+    fontWeight: 500,
+    transition: "background 0.18s ease, color 0.18s ease",
   },
-  navItemActive: { background: "#181818", color: "#F2F2F0" },
-  libraryCard: {
-    background: "#151517",
-    borderRadius: 10,
-    padding: "16px",
-    marginBottom: 16,
-  },
-  libraryTitle: { margin: "0 0 6px 0", fontSize: 13.5, fontWeight: 700 },
-  libraryDesc: { margin: "0 0 14px 0", fontSize: 12, color: "#A7A7AB", lineHeight: 1.4 },
-  libraryBtn: {
-    display: "inline-block",
-    background: "#F2F2F0",
-    color: "#0B0B0C",
-    fontSize: 12.5,
-    fontWeight: 700,
-    padding: "8px 16px",
-    borderRadius: 20,
-    textDecoration: "none",
-  },
+  navItemActive: { background: "var(--veyra-gradient)", color: "#fff" },
   userBox: {
-    marginTop: "auto",
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
-    padding: "8px",
-    borderTop: "1px solid #1C1C1E",
-    paddingTop: 14,
+    padding: "10px 8px",
+    borderTop: "1px solid rgba(255,255,255,0.08)",
+    marginTop: 12,
   },
-  userRow: {
-    display: "flex",
-    alignItems: "center",
-    gap: 10,
-    minWidth: 0,
-    background: "none",
-    border: "none",
-    cursor: "pointer",
-    padding: 0,
-  },
+  userRow: { display: "flex", alignItems: "center", gap: 10, minWidth: 0 },
   avatarPlaceholder: {
     width: 30,
     height: 30,
@@ -177,15 +158,8 @@ const styles = {
     flexShrink: 0,
   },
   avatarImg: { width: "100%", height: "100%", objectFit: "cover" },
-  username: {
-    fontSize: 13,
-    fontWeight: 600,
-    color: "#F2F2F0",
-    whiteSpace: "nowrap",
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-  },
-  iconOnlyBtn: { background: "none", border: "none", color: "#A7A7AB", cursor: "pointer", padding: 6 },
+  username: { fontSize: 13, fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" },
+  logoutBtn: { background: "none", border: "none", color: "#8A8A8E", cursor: "pointer", padding: 6 },
   bottomNavItem: {
     display: "flex",
     flexDirection: "column",
@@ -194,8 +168,8 @@ const styles = {
     background: "none",
     border: "none",
     textDecoration: "none",
-    padding: "4px 8px",
+    padding: "4px 10px",
     cursor: "pointer",
   },
-  bottomNavLabel: { fontSize: 10, fontWeight: 500 },
+  bottomNavLabel: { fontSize: 10.5, fontWeight: 500 },
 };
