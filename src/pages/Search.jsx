@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { musicApi } from "../lib/api";
-import { SearchIcon, PlayIcon } from "../components/Icons";
+import { SearchIcon, PlayIcon, PlusIcon } from "../components/Icons";
+import AddToPlaylistMenu from "../components/AddToPlaylistMenu";
 
 function formatDuration(sec) {
   if (!sec && sec !== 0) return "--:--";
@@ -14,6 +15,7 @@ export default function Search({ onPlay }) {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [addTarget, setAddTarget] = useState(null);
 
   async function handleSearch(e) {
     e.preventDefault();
@@ -31,7 +33,7 @@ export default function Search({ onPlay }) {
   }
 
   return (
-    <div>
+    <div className="veyra-fade-in">
       <h1 style={styles.title}>Cari Musik</h1>
 
       <form onSubmit={handleSearch} style={styles.searchBar}>
@@ -48,11 +50,18 @@ export default function Search({ onPlay }) {
       {loading && <p style={styles.status}>Mencari...</p>}
       {error && <p style={{ ...styles.status, color: "#E5675A" }}>{error}</p>}
 
-      <div style={styles.grid}>
+      <div className="veyra-grid" style={styles.grid}>
         {results.map((track, i) => (
-          <div key={track.id + i} style={styles.card}>
+          <div key={track.id + i} className="veyra-glass-card" style={styles.card}>
             <div style={styles.thumbWrap}>
               <img src={track.thumbnail} alt="" style={styles.thumb} />
+              <button
+                style={styles.addBtn}
+                onClick={(e) => { e.stopPropagation(); setAddTarget(track); }}
+                title="Tambah ke playlist"
+              >
+                <PlusIcon size={14} />
+              </button>
               <button style={styles.playBtn} onClick={() => onPlay(track, results, i)}>
                 <PlayIcon size={20} />
               </button>
@@ -62,6 +71,10 @@ export default function Search({ onPlay }) {
           </div>
         ))}
       </div>
+
+      {addTarget && (
+        <AddToPlaylistMenu track={addTarget} onClose={() => setAddTarget(null)} />
+      )}
     </div>
   );
 }
@@ -95,17 +108,33 @@ const styles = {
     gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
     gap: 18,
   },
-  card: { cursor: "pointer" },
+  card: { cursor: "pointer", borderRadius: 12, padding: 8 },
   thumbWrap: {
     position: "relative",
     width: "100%",
     aspectRatio: "1 / 1",
-    borderRadius: 10,
+    borderRadius: 8,
     overflow: "hidden",
     background: "#151517",
     marginBottom: 10,
   },
   thumb: { width: "100%", height: "100%", objectFit: "cover", display: "block" },
+  addBtn: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    width: 28,
+    height: 28,
+    borderRadius: "50%",
+    background: "rgba(11,11,12,0.6)",
+    backdropFilter: "blur(6px)",
+    border: "1px solid rgba(255,255,255,0.2)",
+    color: "#fff",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    cursor: "pointer",
+  },
   playBtn: {
     position: "absolute",
     bottom: 8,
@@ -113,8 +142,8 @@ const styles = {
     width: 34,
     height: 34,
     borderRadius: "50%",
-    background: "#F2F2F0",
-    color: "#0B0B0C",
+    background: "var(--veyra-gradient)",
+    color: "#fff",
     border: "none",
     display: "flex",
     alignItems: "center",
@@ -139,5 +168,6 @@ const styles = {
     WebkitLineClamp: 2,
     WebkitBoxOrient: "vertical",
     overflow: "hidden",
+    padding: "0 4px",
   },
 };
