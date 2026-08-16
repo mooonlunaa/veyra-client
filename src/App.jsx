@@ -13,6 +13,7 @@ import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import NowPlaying from "./pages/NowPlaying";
 import { musicApi } from "./lib/api";
+import { pushRecentlyPlayed } from "./lib/recentlyPlayed";
 import { PlayIcon, PauseIcon, NextIcon, PrevIcon } from "./components/Icons";
 
 function formatDuration(sec = 0) {
@@ -29,13 +30,9 @@ function ProtectedRoute({ children }) {
 }
 
 function AppRoutes() {
+  const { user } = useAuth();
   const [queue, setQueue] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(-1);
-  // playToken bertambah setiap kali user MEMINTA lagu baru diputar.
-  // Ini yang jadi pemicu reload <audio>, BUKAN currentIndex — sebelumnya dua
-  // daftar berbeda (mis. hasil Search vs isi Playlist) bisa punya index yang
-  // sama (0), sehingga useEffect([currentIndex]) tidak pernah jalan ulang dan
-  // audio lama tetap playing walau UI sudah pindah ke lagu baru.
   const [playToken, setPlayToken] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -85,8 +82,6 @@ function AppRoutes() {
     setIsPlaying(true);
   }
 
-  // Setiap playToken berubah = user benar-benar minta lagu baru.
-  // Hentikan audio lama secara eksplisit dulu, baru ganti src & mainkan.
   useEffect(() => {
     const el = audioRef.current;
     if (!el || !current) return;
@@ -96,6 +91,7 @@ function AppRoutes() {
     el.load();
     const p = el.play();
     if (p && typeof p.catch === "function") p.catch(() => {});
+    pushRecentlyPlayed(user?.username, current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playToken]);
 
@@ -138,24 +134,13 @@ function AppRoutes() {
             </div>
           </div>
           <div style={styles.controls}>
-            <button
-              style={styles.iconBtn}
-              onClick={(e) => { e.stopPropagation(); playPrev(); }}
-              disabled={currentIndex <= 0}
-            >
+            <button style={styles.iconBtn} onClick={(e) => { e.stopPropagation(); playPrev(); }} disabled={currentIndex <= 0}>
               <PrevIcon />
             </button>
-            <button
-              style={styles.playBtn}
-              onClick={(e) => { e.stopPropagation(); togglePlay(); }}
-            >
+            <button style={styles.playBtn} onClick={(e) => { e.stopPropagation(); togglePlay(); }}>
               {isPlaying ? <PauseIcon size={16} /> : <PlayIcon size={16} />}
             </button>
-            <button
-              style={styles.iconBtn}
-              onClick={(e) => { e.stopPropagation(); playNext(); }}
-              disabled={currentIndex >= queue.length - 1}
-            >
+            <button style={styles.iconBtn} onClick={(e) => { e.stopPropagation(); playNext(); }} disabled={currentIndex >= queue.length - 1}>
               <NextIcon />
             </button>
           </div>
@@ -210,27 +195,14 @@ const styles = {
   nowPlaying: { display: "flex", alignItems: "center", gap: 12, minWidth: 0, flex: 1 },
   thumb: { width: 40, height: 40, borderRadius: 8, objectFit: "cover", flexShrink: 0 },
   trackTitle: {
-    margin: "0 0 2px 0",
-    fontSize: 13,
-    fontWeight: 500,
-    maxWidth: 260,
-    whiteSpace: "nowrap",
-    overflow: "hidden",
-    textOverflow: "ellipsis",
+    margin: "0 0 2px 0", fontSize: 13, fontWeight: 500, maxWidth: 260,
+    whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
   },
   trackTime: { margin: 0, fontSize: 11.5, color: "#8A8A8E" },
   controls: { display: "flex", alignItems: "center", gap: 14 },
   iconBtn: { background: "none", border: "none", color: "#F2F2F0", cursor: "pointer", padding: 4 },
   playBtn: {
-    background: "var(--veyra-gradient)",
-    color: "#fff",
-    border: "none",
-    borderRadius: "50%",
-    width: 32,
-    height: 32,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    cursor: "pointer",
+    background: "var(--veyra-gradient)", color: "#fff", border: "none", borderRadius: "50%",
+    width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer",
   },
 };
